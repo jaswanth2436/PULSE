@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+*.egg
+.mypy_cache/
+htmlcov/
+.coverage
+.coverage.*
+backend/pulse.db
+backend/uploads/
+backend/weights/
+
+# Node
+node_modules/
+dist/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ML weights (download separately)
+*.pt
+*.onnx
+*.weights
+
+# Logs
+*.log
+logs/
+
+# Large test videos (add your own)
+data/videos/
