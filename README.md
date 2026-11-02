@@ -206,7 +206,6 @@ taskkill /PID <PID> /F
 
 ## Performance Results
 
-*Results from reproducible simulation experiments. These are simulation values, not real-world measurements.*
 
 | Metric | Fixed Timing | Queue Adaptive | PULSE |
 |--------|-------------|----------------|-------|
@@ -214,7 +213,6 @@ taskkill /PID <PID> /F
 | Throughput (veh/hr) | TBD | TBD | TBD |
 | Max Queue | TBD | TBD | TBD |
 
-*Run the Performance Lab to generate actual results with your configuration.*
 
 ---
 
@@ -243,14 +241,13 @@ taskkill /PID <PID> /F
 
 ## Team
 
-*[Team member names to be added by the team before submission]*
 
-- Team Leader: [NAME]
-- Frontend Developer: [NAME]
-- Backend/ML Engineer: [NAME]
-- CV Engineer: [NAME]
+- Team Leader: [PALURU JASWANTH]
+- Frontend Developer: [PALURU JASWANTH]
+- Backend/ML Engineer: [PALURU JASWANTH]
+- CV Engineer: [PALURU JASWANTH]
 
-**Institution:** [INSTITUTION NAME]
+**Institution:** [SAVEETHA SCHOOL OF ENGINEERING]
 
 ---
 
