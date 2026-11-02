@@ -113,6 +113,10 @@ cd frontend
 npm install
 ```
 
+The frontend uses the Vite `/api` and `/ws` development proxies by default. For a deployed frontend, copy
+`frontend/.env.example` to `frontend/.env` and set `VITE_API_BASE_URL` and `VITE_WS_URL` to the deployed
+backend endpoints.
+
 ---
 
 ## Running PULSE
@@ -190,12 +194,12 @@ taskkill /PID <PID> /F
 
 **YOLO model not downloading:**
 - Check internet connection
-- Set `USE_MOCK_DETECTOR=true` in backend/.env for offline operation
-- Manually download: See ml/README.md
+- PULSE does not fabricate detections when YOLO is unavailable; install the detector and model before processing video
+- Set `MODEL_PATH` to the local YOLO weights file; see `backend/.env.example`
 
 **Python 3.14 compatibility:**
 - Some packages may have limited Python 3.14 support
-- PULSE is designed to work with mock detector when ultralytics is unavailable
+- PULSE reports the detector as unavailable when ultralytics or the model is missing
 - Recommended: Python 3.11 or 3.12 for full feature support
 
 ---

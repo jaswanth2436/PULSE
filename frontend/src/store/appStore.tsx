@@ -1,5 +1,5 @@
-import { createContext, useContext, useReducer, ReactNode } from 'react';
-import type { TrafficState, IntentProfile, ExperimentResult, Toast, Alert } from '../types';
+import { createContext, useContext, useReducer, type ReactNode } from 'react';
+import type { TrafficState, IntentProfile, ExperimentResult, Toast } from '../types';
 
 interface AppState {
   trafficState: TrafficState | null;
@@ -21,6 +21,7 @@ type Action =
   | { type: 'SET_EXPERIMENTS'; payload: ExperimentResult[] }
   | { type: 'ADD_TOAST'; payload: Toast }
   | { type: 'REMOVE_TOAST'; payload: string }
+  | { type: 'DISMISS_TOAST'; payload: string }
   | { type: 'SET_DEMO_STEP'; payload: number }
   | { type: 'SET_DEMO_ACTIVE'; payload: boolean }
   | { type: 'SET_SIM_RUNNING'; payload: boolean }
@@ -59,6 +60,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'ADD_TOAST':
       return { ...state, toasts: [...state.toasts, action.payload] };
     case 'REMOVE_TOAST':
+    case 'DISMISS_TOAST':
       return { ...state, toasts: state.toasts.filter(t => t.id !== action.payload) };
     case 'SET_DEMO_STEP':
       return { ...state, demoStep: action.payload };

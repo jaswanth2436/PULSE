@@ -1,16 +1,30 @@
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Eye, Sliders, BarChart2, FileText, Play, Zap } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import {
+  LayoutDashboard,
+  Eye,
+  Sliders,
+  BarChart2,
+  FileText,
+  Play,
+  Zap,
+  Radio,
+  User,
+  Settings,
+  Sparkles,
+  HelpCircle,
+} from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAppStore } from '../../store/appStore';
 import { useEffect, useState } from 'react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Overview', end: true },
-  { to: '/intersection', icon: Eye, label: 'Intersection Intelligence' },
-  { to: '/intent-studio', icon: Sliders, label: 'Intent Studio' },
-  { to: '/performance-lab', icon: BarChart2, label: 'Performance Lab' },
-  { to: '/reports', icon: FileText, label: 'Reports' },
+  { to: '/intersection', icon: Eye, label: 'Intersection Intelligence', end: false },
+  { to: '/intent-studio', icon: Sliders, label: 'Intent Studio', end: false },
+  { to: '/performance-lab', icon: BarChart2, label: 'Performance Lab', end: false },
+  { to: '/reports', icon: FileText, label: 'Reports', end: false },
 ];
+
 export default function Sidebar() {
   const { state } = useAppStore();
   const [time, setTime] = useState(new Date());
@@ -21,93 +35,126 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 bg-navy-900 flex flex-col z-30" style={{ backgroundColor: '#0f172a' }}>
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white fill-current">
-              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-            </svg>
+    <aside
+      className="app-sidebar fixed left-0 top-0 h-screen w-64 flex flex-col z-30"
+      role="navigation"
+      aria-label="Main navigation"
+    >
+      {/* ── Brand & Logo ───────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10 flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-[#f5b942] flex items-center justify-center flex-shrink-0 shadow-[0_0_22px_rgba(245,185,66,.22)]">
+          <Radio className="h-5 w-5 text-white" strokeWidth={2.4} />
+        </div>
+        <div className="min-w-0">
+          <div className="text-white font-black text-lg leading-none tracking-[0.2em] flex items-center gap-1.5">
+            <span>PULSE</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-[#f5b942]/15 text-[#f5b942] border border-[#f5b942]/30">OPS</span>
           </div>
-          <div>
-            <div className="text-white font-bold text-lg leading-none tracking-wide">PULSE</div>
-            <div className="text-slate-400 text-xs mt-0.5">Traffic Intelligence</div>
+          <div className="text-[#8ba7c7] text-[10px] mt-1 tracking-wider uppercase truncate">
+            Intelligent Traffic Operations
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-hide">
-        <div className="text-xs font-medium text-slate-500 uppercase tracking-wider px-2 mb-3">Navigation</div>
+      {/* ── Guided Demo Hero Shortcut ─────────────────────────────── */}
+      <div className="px-3 pt-4 pb-2">
+        <NavLink
+          to="/demo"
+          className={({ isActive }) =>
+            clsx(
+              'flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all border shadow-sm',
+              isActive
+                ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
+                : 'bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-blue-400/30 text-blue-200 hover:border-blue-400 hover:text-white'
+            )
+          }
+        >
+          <Sparkles className="h-4 w-4 text-emerald-400 animate-pulse flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="truncate block font-bold">Start Guided Demo</span>
+            <span className="text-[10px] text-slate-300 block font-normal">Judge Presentation Mode</span>
+          </div>
+          <Play className="h-3 w-3 text-slate-300 flex-shrink-0" />
+        </NavLink>
+      </div>
+
+      {/* ── Navigation ────────────────────────────────────────────── */}
+      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto" aria-label="Primary navigation">
+        <div className="text-[10px] font-bold text-[#4a6180] uppercase tracking-[0.2em] px-3 mb-2 pt-2">
+          Operations
+        </div>
+
         {navItems.map(({ to, icon: Icon, label, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
-            className={({ isActive }) => clsx(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group',
-              isActive
-                ? 'bg-blue-600/20 text-blue-400 border-l-2 border-blue-400 pl-[10px]'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            )}
+            aria-label={label}
+            className={({ isActive }) =>
+              clsx(
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group',
+                isActive
+                  ? 'bg-blue-600/20 text-white border-l-[3px] border-l-blue-400 font-semibold'
+                  : 'text-[#8ba7c7] hover:bg-white/5 hover:text-white'
+              )
+            }
           >
             {({ isActive }) => (
               <>
-                <Icon className={clsx('h-4 w-4 flex-shrink-0', isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-white')} />
+                <Icon
+                  style={{ width: 16, height: 16, flexShrink: 0 }}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                  className={isActive ? 'text-blue-400' : 'text-[#4a6180] group-hover:text-blue-300'}
+                />
                 <span className="truncate">{label}</span>
               </>
             )}
           </NavLink>
         ))}
-
-        {/* Demo link */}
-        <div className="pt-3 mt-3 border-t border-white/10">
-          <NavLink
-            to="/demo"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm bg-teal-600/20 text-teal-400 hover:bg-teal-600/30 transition-all"
-          >
-            <Play className="h-4 w-4 flex-shrink-0" />
-            <span>Live Demo</span>
-            <span className="ml-auto h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
-          </NavLink>
-        </div>
       </nav>
 
-      {/* Status */}
-      <div className="px-4 py-4 border-t border-white/10 space-y-3">
-        {/* Connection status */}
-        <div className="flex items-center gap-2.5">
-          <div className={clsx('h-2 w-2 rounded-full flex-shrink-0', state.wsConnected ? 'bg-green-400' : 'bg-red-400')}>
-            {state.wsConnected && <div className="h-2 w-2 rounded-full bg-green-400 animate-ping" />}
+      {/* ── Bottom Operator & System Status Area ──────────────────── */}
+      <div className="px-4 py-4 border-t border-white/10 flex-shrink-0 space-y-3 bg-[#0c1524]">
+        {/* Operator Profile Card */}
+        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-white/5 border border-white/5">
+          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+            <User className="h-3.5 w-3.5" />
           </div>
-          <span className="text-xs text-slate-400 flex-1 truncate">
-            {state.wsConnected ? 'Live Connected' : 'Offline Mode'}
-          </span>
-        </div>
-
-        {/* Model status */}
-        <div className="flex items-center gap-2.5">
-          <Zap className="h-3.5 w-3.5 text-amber-400 flex-shrink-0" />
-          <span className="text-xs text-slate-400 truncate">
-            {state.trafficState?.modelStatus ?? 'Model inactive'}
-          </span>
-        </div>
-
-        {/* Time */}
-        <div className="text-xs text-slate-500 font-mono">
-          {time.toLocaleTimeString()}
-        </div>
-
-        {/* Competition badge */}
-        <div className="flex items-center gap-2 bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-lg px-3 py-2 mt-1">
-          <svg viewBox="0 0 20 20" className="h-4 w-4 text-amber-400 fill-current flex-shrink-0">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-          </svg>
-          <div>
-            <div className="text-xs font-semibold text-white leading-none">Neural Storm</div>
-            <div className="text-xs text-slate-400 leading-none mt-0.5">2026</div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-white truncate">Traffic Engineer</p>
+            <p className="text-[10px] text-[#7895b6] truncate">Junction Node A-04</p>
           </div>
+          <NavLink to="/demo" title="Help / Documentation" className="text-[#7895b6] hover:text-white">
+            <HelpCircle className="h-3.5 w-3.5" />
+          </NavLink>
+        </div>
+
+        {/* Telemetry and Model status */}
+        <div className="flex items-center justify-between text-xs text-[#8ba7c7] px-1">
+          <div className="flex items-center gap-2">
+            <div
+              className={clsx(
+                'h-2 w-2 rounded-full',
+                state.wsConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'
+              )}
+            />
+            <span className="text-[11px] font-medium">
+              {state.wsConnected ? '10 Hz Telemetry' : 'Offline'}
+            </span>
+          </div>
+
+          <div className="text-[11px] font-mono tabular-nums text-slate-400">
+            {time.toLocaleTimeString()}
+          </div>
+        </div>
+
+        {/* Competition Badge */}
+        <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-amber-400 font-bold">★</span>
+            <span className="text-white text-[11px] font-semibold">Neural Storm 2026</span>
+          </div>
+          <span className="text-[10px] text-amber-300 font-mono">FT-01</span>
         </div>
       </div>
     </aside>

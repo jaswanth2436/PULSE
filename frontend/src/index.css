@@ -1,41 +1,252 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
 
+/* ─── Base ───────────────────────────────────────────────────────────────── */
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f8fafc;
-  color: #1e293b;
+  background: #08111f;
+  color: #dce7f4;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* Signal pulse animation */
+/* ─── Animations ─────────────────────────────────────────────────────────── */
 @keyframes signal-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.65; }
 }
 .signal-active { animation: signal-pulse 1.5s ease-in-out infinite; }
 
-/* Skeleton shimmer */
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-float-in { animation: float-in .45s ease-out both; }
+
+@keyframes live-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .4); }
+  50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+.live-glow { animation: live-glow 2s ease-out infinite; }
+
+/* Scan line – used by simulation overlay */
+@keyframes scan {
+  0%, 100% { transform: translateY(0);    opacity: .2; }
+  50%       { transform: translateY(260px); opacity: .8; }
+}
+
+/* ─── Skeleton shimmer ────────────────────────────────────────────────────── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
 .skeleton {
   background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* ─── App Shell ──────────────────────────────────────────────────────────── */
+.app-sidebar {
+  background:
+    linear-gradient(rgba(8, 17, 31, .82), rgba(8, 17, 31, .96)),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(91, 145, 178, .06) 32px),
+    #08111f;
+  border-right: 1px solid rgba(119, 180, 203, .18);
+  box-shadow: 12px 0 32px rgba(0, 0, 0, .24);
+}
+
+.pulse-topbar {
+  background: rgba(8, 17, 31, .92);
+  border-bottom: 1px solid rgba(119, 180, 203, .16);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  backdrop-filter: blur(14px);
+}
+
+.pulse-app {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(20, 184, 166, .08), transparent 28rem),
+    #08111f;
+}
+
+.pulse-workspace {
+  background: #edf2f5;
+}
+
+.pulse-main {
+  background:
+    linear-gradient(rgba(235, 243, 244, .88), rgba(235, 243, 244, .88)),
+    url('/pulse-road-network.svg') center / cover fixed;
+}
+
+.pulse-command-hero {
+  background:
+    linear-gradient(105deg, rgba(7, 23, 39, .98), rgba(11, 42, 57, .96) 58%, rgba(18, 68, 72, .94)),
+    #0b2637;
+  border: 1px solid rgba(105, 207, 190, .28);
+  box-shadow: 0 16px 34px rgba(8, 32, 45, .2);
+}
+
+.pulse-command-hero,
+.pulse-main > div {
+  position: relative;
+}
+
+.pulse-main > div::before {
+  content: '';
+  position: fixed;
+  right: 24px;
+  bottom: 18px;
+  width: 140px;
+  height: 52px;
+  opacity: .14;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0 8%, #0c5660 8% 10%, transparent 10% 27%, #0c5660 27% 29%, transparent 29% 56%, #0c5660 56% 58%, transparent 58%),
+    linear-gradient(#0c5660 0 3px, transparent 3px 22px, #0c5660 22px 25px, transparent 25px);
+  transform: skewX(-24deg);
+}
+
+.pulse-command-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .42;
+  background:
+    linear-gradient(90deg, transparent 49.8%, rgba(245,185,66,.22) 50%, transparent 50.2%),
+    linear-gradient(0deg, transparent 49.8%, rgba(245,185,66,.16) 50%, transparent 50.2%);
+  background-size: 88px 88px;
+  mask-image: linear-gradient(90deg, transparent, black 35%, black 70%, transparent);
+}
+
+.pulse-metric-card {
+  position: relative;
+  overflow: hidden;
+  border-top: 3px solid #d5e0e6;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.pulse-metric-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #14b8a6;
+  opacity: .8;
+}
+
+.pulse-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: #9dc8ca;
+  box-shadow: 0 12px 24px rgba(13, 55, 70, .12);
+}
+
+/* ─── Sidebar Navigation ─────────────────────────────────────────────────── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #94aec5;
+  border-left: 3px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  text-decoration: none;
+  cursor: pointer;
+}
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+.nav-item-active {
+  background: rgba(59, 130, 246, 0.15);
+  border-left-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* ─── Custom Range Input ──────────────────────────────────────────────────── */
+input[type='range'] {
+  accent-color: #2563eb;
+}
+input[type='range']:focus {
+  outline: none;
+}
+
+/* ─── Workflow Rail (light theme, tab-style) ──────────────────────────────── */
+.workflow-rail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 20px;
+  padding: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid #e2e8f0;
+}
+.workflow-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 10px 16px 12px;
+  border-bottom: 2px solid transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  transition: color .18s ease, border-color .18s ease;
+  cursor: pointer;
+}
+.workflow-step:hover {
+  color: #1e40af;
+}
+.workflow-step span {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+.workflow-step.is-active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+.workflow-step.is-active span {
+  color: #3b82f6;
+}
+
+/* ─── Glass card (kept for backward compatibility) ───────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}
+
+/* ─── Intersection road color vars ───────────────────────────────────────── */
+:root {
+  --road-surface: #374151;
+  --road-marking: #ffffff;
+  --road-bg: #d1d5db;
+  --road-corner: #6b7280;
+  --signal-green: #16a34a;
+  --signal-amber: #ca8a04;
+  --signal-red: #dc2626;
+  --signal-dim: #374151;
 }

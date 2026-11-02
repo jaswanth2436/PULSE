@@ -20,7 +20,7 @@ class AgentOrchestrator:
     4. SafetyAgent - validate plan
     """
 
-    def __init__(self, model_path: str = "yolov8n.pt", mock_mode: bool = True):
+    def __init__(self, model_path: str = "yolov8n.pt", mock_mode: bool = False):
         self.vision = VisionAgent(model_path=model_path, mock_mode=mock_mode)
         self.demand = DemandAgent()
         self.safety = SafetyAgent()
@@ -209,7 +209,7 @@ class AgentOrchestrator:
 
 def _build_default_orchestrator() -> AgentOrchestrator:
     import os
-    force_mock = os.environ.get("USE_MOCK_DETECTOR", "true").lower() in ("1", "true", "yes")
+    force_mock = os.environ.get("USE_MOCK_DETECTOR", "false").lower() in ("1", "true", "yes")
     try:
         from app.config import settings
         path = getattr(settings, "yolo_weights_path", "yolov8n.pt")

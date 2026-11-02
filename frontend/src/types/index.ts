@@ -43,6 +43,15 @@ export interface TrafficState {
   modelStatus: string;
   videoStatus: string;
   timestamp: string;
+  source?: 'video' | 'webcam' | 'simulation' | 'none';
+  detections?: Array<{
+    id: string;
+    class: string;
+    approach: string;
+    confidence: number;
+    is_queued?: boolean;
+    wait?: number;
+  }>;
 }
 
 export interface SignalPhase {

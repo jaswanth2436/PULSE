@@ -1,13 +1,6 @@
-"""Vision agent for vehicle detection and tracking.
-
-Attempts to import ultralytics for YOLOv8; falls back to mock mode
-if the package is unavailable (e.g., Python 3.14 compatibility issues).
-"""
+"""Vision agent for vehicle detection and tracking."""
 
 import logging
-import os
-import random
-import uuid
 from dataclasses import dataclass
 from typing import Optional
 
@@ -44,7 +37,7 @@ class VisionAgent:
     Vehicle detection and tracking agent.
 
     In real mode: runs YOLOv8n inference on video frames.
-    In mock mode: generates synthetic detections from queue parameters.
+    If YOLO is unavailable, returns no detections instead of fabricating data.
     Uses IOUTracker for stable IDs across frames.
     """
 
@@ -52,20 +45,16 @@ class VisionAgent:
     APPROACHES = ["north", "south", "east", "west"]
 
     def __init__(self, model_path: str = "yolov8n.pt", mock_mode: bool | None = None):
-        # Honor USE_MOCK_DETECTOR env
-        force_mock = os.environ.get("USE_MOCK_DETECTOR", "").lower() in ("1", "true", "yes")
         self.model_path = model_path
         self._model = None
         self.tracker = IOUTracker()
         self._time = 0.0
+        self.mock_mode = False
+        self.model_available = False
 
-        if mock_mode is None:
-            self.mock_mode = force_mock or (not _YOLO_AVAILABLE)
-        else:
-            self.mock_mode = mock_mode or force_mock
-
-        if not self.mock_mode:
+        if _YOLO_AVAILABLE and mock_mode is not True:
             self._load_model()
+            self.model_available = self._model is not None
 
     def _load_model(self):
         """Load YOLO model."""
@@ -73,8 +62,8 @@ class VisionAgent:
             self._model = _YOLO(self.model_path)
             logger.info(f"YOLO model loaded from {self.model_path}")
         except Exception as exc:
-            logger.warning(f"Failed to load YOLO model: {exc}. Falling back to mock mode.")
-            self.mock_mode = True
+            logger.error("Failed to load YOLO model: %s", exc)
+            self._model = None
 
     def detect(
         self,
@@ -83,16 +72,13 @@ class VisionAgent:
         approach_rois: Optional[dict[str, list]] = None,
         current_time: float | None = None,
     ) -> list[VehicleDetection]:
-        """Run detection + IOU tracking on a frame (real or mock)."""
+        """Run detection + IOU tracking on a frame."""
         if current_time is not None:
             self._time = current_time
         else:
             self._time += 1.0
 
-        if self.mock_mode or frame is None:
-            raw = self._mock_detect_raw(queue_params or {})
-        else:
-            raw = self._real_detect_raw(frame, approach_rois or {})
+        raw = self._real_detect_raw(frame, approach_rois or {}) if frame is not None else []
 
         # Normalize bboxes to [0,1] for tracker consistency when using pixel coords
         tracks = self.tracker.update(raw, current_time=self._time)
@@ -112,37 +98,12 @@ class VisionAgent:
             )
         return detections
 
-    def _mock_detect_raw(self, queue_params: dict[str, int]) -> list[dict]:
-        """Generate synthetic raw detections based on queue parameters."""
-        detections: list[dict] = []
-        # Stable-ish placement per approach so tracker can lock IDs
-        approach_boxes = {
-            "north": (0.35, 0.05),
-            "south": (0.35, 0.70),
-            "east": (0.70, 0.35),
-            "west": (0.05, 0.35),
-        }
-        for approach in self.APPROACHES:
-            n = queue_params.get(approach, random.randint(1, 4))
-            base_x, base_y = approach_boxes[approach]
-            for i in range(n):
-                x = base_x + (i % 3) * 0.08 + random.uniform(-0.01, 0.01)
-                y = base_y + (i // 3) * 0.06 + random.uniform(-0.01, 0.01)
-                w, h = 0.08, 0.06
-                detections.append({
-                    "class": random.choice(self.VEHICLE_CLASSES),
-                    "bbox": [x, y, x + w, y + h],
-                    "confidence": round(random.uniform(0.7, 0.99), 2),
-                    "approach": approach,
-                })
-        return detections
-
     def _real_detect_raw(
         self, frame: np.ndarray, approach_rois: dict[str, list]
     ) -> list[dict]:
         """Run actual YOLO inference; return raw dicts for tracker."""
         if self._model is None:
-            return self._mock_detect_raw({})
+            return []
 
         results = self._model(frame, verbose=False)
         detections: list[dict] = []

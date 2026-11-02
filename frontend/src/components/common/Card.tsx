@@ -18,7 +18,7 @@ const paddingClasses: Record<string, string> = {
 
 export default function Card({ children, className, title, subtitle, action, padding = 'md' }: CardProps) {
   return (
-    <div className={clsx('bg-white rounded-lg shadow-sm border border-slate-200', paddingClasses[padding], className)}>
+    <div className={clsx('glass-card rounded-2xl transition-shadow duration-300 hover:shadow-xl hover:shadow-slate-900/5', paddingClasses[padding], className)}>
       {(title || action) && (
         <div className="flex items-start justify-between mb-4">
           <div>

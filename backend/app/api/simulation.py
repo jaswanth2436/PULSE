@@ -143,20 +143,15 @@ def _merge_scenario(config: SimulationConfig) -> SimulationConfig:
         scenario_cfg = SCENARIOS[config.scenario]
 
     base = scenario_cfg.model_dump()
-    # Prefer explicit request fields over scenario defaults when they differ from schema defaults
     req = config.model_dump()
-    # Always take scenario arrival rates/seed/duration unless request set a custom short duration
-    # Keep controller_type and intent_weights from request
-    merged = {**base}
+    explicit = config.model_fields_set
+    merged = {
+        field: req[field] if field in explicit else base[field]
+        for field in base
+    }
     merged["controller_type"] = config.controller_type
     merged["intent_weights"] = config.intent_weights
     merged["scenario"] = config.scenario
-    # Allow shorter demo durations from the client
-    if config.duration and config.duration != 3600:
-        merged["duration"] = config.duration
-    if config.seed is not None and req.get("seed") is not None:
-        # Keep request seed if provided (including scenario default seed when matching)
-        merged["seed"] = config.seed
     return SimulationConfig(**merged)
 
 
@@ -165,12 +160,8 @@ async def start_simulation(config: SimulationConfig, background_tasks: Backgroun
     if get_sim_live_state()["is_running"]:
         raise HTTPException(409, "Simulation already running. Stop it first.")
 
-    # Use active controller mode if request left default pulse and mode was set
     mode = get_controller_mode()
-    if config.controller_type == "pulse" and mode in ("fixed", "adaptive", "pulse"):
-        # Only override when client didn't explicitly change — keep request as source of truth
-        pass
-    if not config.controller_type:
+    if "controller_type" not in config.model_fields_set:
         config = config.model_copy(update={"controller_type": mode})
 
     config = _merge_scenario(config)

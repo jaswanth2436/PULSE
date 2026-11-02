@@ -32,7 +32,6 @@ _video_state = {
 }
 
 ALLOWED_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv"}
-MAX_SIZE_BYTES = 500 * 1024 * 1024
 _process_task: asyncio.Task | None = None
 _stop_flag = False
 _pause_flag = False
@@ -68,7 +67,7 @@ async def _process_video_loop(filepath: str):
     fps = float(cap.get(cv2.CAP_PROP_FPS) or 15.0)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
     duration = total_frames / fps if fps > 0 else 0.0
-    detector_mode = "mock" if orchestrator.vision.mock_mode else "yolo"
+    detector_mode = "yolo" if orchestrator.vision.model_available else "unavailable"
     _video_state.update({
         "fps": round(fps, 2),
         "frame_count": total_frames,
@@ -242,8 +241,11 @@ async def upload_video(file: UploadFile = File(...)):
             total = 0
             while chunk := await file.read(1024 * 1024):
                 total += len(chunk)
-                if total > MAX_SIZE_BYTES:
-                    raise HTTPException(413, "File too large (max 500 MB)")
+                if total > settings.max_upload_bytes:
+                    raise HTTPException(
+                        413,
+                        f"File too large (max {settings.max_upload_size_mb} MB)",
+                    )
                 f.write(chunk)
     except HTTPException:
         if os.path.exists(filepath):
@@ -260,8 +262,8 @@ async def upload_video(file: UploadFile = File(...)):
             frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
             duration = frame_count / fps if fps > 0 else 0.0
             cap.release()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Could not probe uploaded video metadata: %s", exc)
 
     from app.agents.orchestrator import orchestrator
     _video_state.update({

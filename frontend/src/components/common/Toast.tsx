@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAppStore } from '../../store/appStore';
@@ -11,7 +10,7 @@ const levelConfig = {
   error: { icon: AlertCircle, bg: 'bg-red-50 border-red-200', icon_color: 'text-red-500', title_color: 'text-red-800' },
 };
 
-function ToastItem({ toast }: { toast: ToastType }) {
+export function Toast({ toast }: { toast: ToastType }) {
   const { dispatch } = useAppStore();
   const cfg = levelConfig[toast.level];
   const Icon = cfg.icon;
@@ -36,7 +35,7 @@ export default function ToastContainer() {
   const { state } = useAppStore();
   return (
     <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
-      {state.toasts.map(t => <ToastItem key={t.id} toast={t} />)}
+      {state.toasts.map(t => <Toast key={t.id} toast={t} />)}
     </div>
   );
 }

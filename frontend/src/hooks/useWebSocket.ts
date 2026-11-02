@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAppStore } from '../store/appStore';
 import type { TrafficState } from '../types';
+import { api } from '../services/api';
 
-const WS_URL = 'ws://localhost:8000/ws/telemetry';
+const WS_URL = import.meta.env.VITE_WS_URL ||
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws/telemetry`;
 
 export function useWebSocket() {
   const { dispatch } = useAppStore();
@@ -28,10 +30,14 @@ export function useWebSocket() {
         try {
           const data: TrafficState = JSON.parse(evt.data);
           dispatch({ type: 'UPDATE_TRAFFIC', payload: data });
-        } catch (_) {}
+        } catch (error) {
+          console.warn('Ignoring malformed telemetry message', error);
+        }
       };
 
-      ws.onerror = () => {};
+      ws.onerror = (error) => {
+        console.warn('Telemetry WebSocket error', error);
+      };
 
       ws.onclose = () => {
         if (!mountedRef.current) return;
@@ -40,13 +46,21 @@ export function useWebSocket() {
         // Reconnect after 3s
         reconnectTimer.current = setTimeout(connect, 3000);
       };
-    } catch (_) {
+    } catch (error) {
+      console.warn('Unable to connect to telemetry WebSocket', error);
       reconnectTimer.current = setTimeout(connect, 5000);
     }
   }, [dispatch]);
 
   useEffect(() => {
     mountedRef.current = true;
+    api.trafficCurrent()
+      .then((snapshot) => {
+        if (mountedRef.current) dispatch({ type: 'UPDATE_TRAFFIC', payload: snapshot });
+      })
+      .catch((error) => {
+        console.warn('Traffic snapshot unavailable; waiting for telemetry connection', error);
+      });
     connect();
     return () => {
       mountedRef.current = false;

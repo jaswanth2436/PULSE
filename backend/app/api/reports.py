@@ -1,12 +1,14 @@
 """Reports endpoints."""
 
 import json
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy import select
 from app.database.init_db import get_db
 from app.models.database import Report, ExperimentRun
 
 router = APIRouter(tags=["reports"])
+logger = logging.getLogger("pulse.reports")
 
 
 @router.get("")
@@ -37,8 +39,8 @@ def _report_to_dict(r: Report, full: bool = False) -> dict:
         try:
             d["config"] = json.loads(r.config_json or "{}")
             d["results"] = json.loads(r.results_json or "{}")
-        except Exception:
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            logger.warning("Invalid stored report JSON for report %s: %s", r.id, exc)
             d["config"] = {}
             d["results"] = {}
     return d
-

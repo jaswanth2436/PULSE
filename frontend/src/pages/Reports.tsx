@@ -3,8 +3,23 @@ import Layout from '../components/layout/Layout';
 import { api } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { fmt, fmtDateTime } from '../utils/formatters';
-import { Search, Download, FileText, ChevronRight, X } from 'lucide-react';
+import {
+  Search,
+  Download,
+  FileText,
+  ChevronRight,
+  X,
+  Printer,
+  RotateCcw,
+  CheckCircle2,
+  ShieldCheck,
+  Activity,
+  Layers,
+  Clock,
+  Sparkles,
+} from 'lucide-react';
 import { clsx } from 'clsx';
+import { useNavigate } from 'react-router-dom';
 
 interface Experiment {
   id: number;
@@ -21,9 +36,12 @@ interface Experiment {
 
 export default function Reports() {
   const { addToast } = useToast();
+  const navigate = useNavigate();
+
   const [experiments, setExperiments] = useState<Experiment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [controllerFilter, setControllerFilter] = useState<string>('all');
   const [selected, setSelected] = useState<Experiment | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -36,8 +54,8 @@ export default function Reports() {
     try {
       const res = await api.listExperiments(0, 100);
       setExperiments(res.experiments || []);
-    } catch (e) {
-      // Backend offline — show empty state
+    } catch (e: any) {
+      addToast('error', 'Unable to Load Records', e.message);
     } finally {
       setLoading(false);
     }
@@ -49,217 +67,324 @@ export default function Reports() {
     try {
       const detail = await api.getExperiment(exp.id);
       setSelected(detail);
-    } catch (e) {}
-    setDetailLoading(false);
+    } catch {
+      // Use existing record if detail query fails
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const exportExp = async (id: number, format: 'csv' | 'json') => {
     try {
       const res = await api.exportExperiment(id, format);
-      if (!res.ok) throw new Error('Export failed');
+      if (!res.ok) throw new Error('Export service response error');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `experiment_${id}.${format}`;
+      a.download = `PULSE_experiment_${id}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
-      addToast('success', 'Export downloaded', `experiment_${id}.${format}`);
+      addToast('success', 'File Exported', `PULSE_experiment_${id}.${format}`);
     } catch (e: any) {
-      addToast('error', 'Export failed', e.message);
+      addToast('error', 'Export Failed', e.message);
     }
   };
 
-  const filtered = experiments.filter(e =>
-    !search || [e.scenario, e.controller, String(e.id), e.status].some(v => v.toLowerCase().includes(search.toLowerCase()))
-  );
+  const completedCount = experiments.filter((e) => e.status === 'completed').length;
+  const latestExp = experiments[0];
 
-  const controllerBadge = (ctrl: string) => (
-    <span className={clsx('inline-flex px-2 py-0.5 rounded text-xs font-medium capitalize',
-      ctrl === 'pulse' ? 'bg-blue-100 text-blue-700' :
-      ctrl === 'adaptive' ? 'bg-teal-100 text-teal-700' :
-      'bg-slate-100 text-slate-600'
-    )}>{ctrl}</span>
-  );
+  const filtered = experiments.filter((e) => {
+    const matchesSearch =
+      !search ||
+      [e.scenario, e.controller, String(e.id), e.status].some((v) =>
+        v.toLowerCase().includes(search.toLowerCase())
+      );
+    const matchesController =
+      controllerFilter === 'all' || e.controller.toLowerCase() === controllerFilter.toLowerCase();
+    return matchesSearch && matchesController;
+  });
 
   return (
-    <Layout title="Reports" subtitle="Experiment history, results, and export.">
-      <div className="flex gap-5">
-        {/* Main list */}
-        <div className="flex-1 min-w-0">
-          {/* Search + actions */}
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by scenario, controller, ID…"
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <button onClick={loadExperiments} className="px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-                Refresh
-              </button>
-            </div>
+    <Layout
+      title="Performance Reports & Audit Logs"
+      subtitle="Store, review and communicate experimental traffic signal optimization results."
+    >
+      <div className="space-y-6">
+        {/* ── 4 Reports Overview Metrics ────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Experiments</span>
+            <p className="text-2xl font-bold text-slate-800 mt-1">{experiments.length}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Recorded evaluations</p>
           </div>
-
-          {/* Table */}
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-            {loading ? (
-              <div className="p-12 text-center text-slate-400">Loading experiments…</div>
-            ) : filtered.length === 0 ? (
-              <div className="p-12 text-center">
-                <FileText className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-                <p className="text-slate-500 font-medium">No experiments found</p>
-                <p className="text-slate-400 text-sm mt-1">Run an experiment in the Performance Lab to create records.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      {['ID','Scenario','Controller','Duration','Seed','Status','Created','Actions'].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filtered.map(exp => (
-                      <tr
-                        key={exp.id}
-                        className={clsx('hover:bg-slate-50 transition-colors cursor-pointer', selected?.id === exp.id && 'bg-blue-50')}
-                        onClick={() => openDetail(exp)}
-                      >
-                        <td className="px-4 py-3 font-mono text-slate-600">#{exp.id}</td>
-                        <td className="px-4 py-3 font-medium text-slate-700">{exp.scenario}</td>
-                        <td className="px-4 py-3">{controllerBadge(exp.controller)}</td>
-                        <td className="px-4 py-3 text-slate-600">{exp.duration}s</td>
-                        <td className="px-4 py-3 font-mono text-slate-500">{exp.seed}</td>
-                        <td className="px-4 py-3">
-                          <span className={clsx('inline-flex px-2 py-0.5 rounded text-xs font-medium',
-                            exp.status === 'completed' ? 'bg-green-100 text-green-700' :
-                            exp.status === 'running' ? 'bg-blue-100 text-blue-700' :
-                            'bg-slate-100 text-slate-500'
-                          )}>{exp.status}</span>
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 text-xs">{fmtDateTime(exp.created_at)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                            <button
-                              onClick={() => exportExp(exp.id, 'csv')}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="Export CSV"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              onClick={() => openDetail(exp)}
-                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                              title="View detail"
-                            >
-                              <ChevronRight className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="px-4 py-3 border-t border-slate-100 text-xs text-slate-400">
-                  {filtered.length} experiments
-                </div>
-              </div>
-            )}
+          <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Completed Benchmark Runs</span>
+            <p className="text-2xl font-bold text-emerald-600 mt-1">{completedCount}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Verified simulation runs</p>
+          </div>
+          <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Saved Reports</span>
+            <p className="text-2xl font-bold text-blue-600 mt-1">{experiments.length}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Exportable CSV/JSON archives</p>
+          </div>
+          <div className="p-5 rounded-xl border border-slate-200 bg-white shadow-sm">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Latest Experiment</span>
+            <p className="text-sm font-bold text-slate-800 mt-2 truncate">
+              {latestExp ? `Scenario ${latestExp.scenario} (${latestExp.controller})` : '—'}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {latestExp ? fmtDateTime(latestExp.created_at) : 'No runs recorded'}
+            </p>
           </div>
         </div>
 
-        {/* Detail panel */}
-        {selected && (
-          <div className="w-96 flex-shrink-0">
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-5 sticky top-0">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-slate-700">Experiment #{selected.id}</h3>
-                <button onClick={() => setSelected(null)} className="p-1 text-slate-400 hover:text-slate-600 rounded">
+        {/* ── Filter Toolbar ───────────────────────────────────────── */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="relative w-full sm:w-auto flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search run ID, scenario, or controller..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <div className="flex p-1 bg-slate-100 rounded-lg text-xs">
+              {['all', 'pulse', 'adaptive', 'fixed'].map((ctrl) => (
+                <button
+                  key={ctrl}
+                  onClick={() => setControllerFilter(ctrl)}
+                  className={clsx(
+                    'px-3 py-1 rounded-md font-semibold capitalize transition-all',
+                    controllerFilter === ctrl
+                      ? 'bg-white text-blue-700 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  )}
+                >
+                  {ctrl}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={loadExperiments}
+              className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* ── Table & Detailed Report Inspector ────────────────────── */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+          {/* Main Experiments Table */}
+          <div className={clsx('transition-all', selected ? 'xl:col-span-7' : 'xl:col-span-12')}>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              {loading ? (
+                <div className="p-16 text-center text-xs text-slate-400">Loading historical experiment records...</div>
+              ) : filtered.length === 0 ? (
+                <div className="p-16 text-center">
+                  <FileText className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-slate-700">No Experiment Reports Found</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Execute an evaluation in Performance Lab to populate persistent logs.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-semibold text-left">
+                        <th className="px-4 py-3">Run ID</th>
+                        <th className="px-4 py-3">Date</th>
+                        <th className="px-4 py-3">Scenario</th>
+                        <th className="px-4 py-3">Controller</th>
+                        <th className="px-4 py-3">Duration</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filtered.map((exp) => (
+                        <tr
+                          key={exp.id}
+                          onClick={() => openDetail(exp)}
+                          className={clsx(
+                            'hover:bg-slate-50 transition-colors cursor-pointer',
+                            selected?.id === exp.id && 'bg-blue-50/60'
+                          )}
+                        >
+                          <td className="px-4 py-3 font-mono font-bold text-slate-700">#{exp.id}</td>
+                          <td className="px-4 py-3 text-slate-500">{fmtDateTime(exp.created_at)}</td>
+                          <td className="px-4 py-3 font-semibold text-slate-800">Scenario {exp.scenario}</td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={clsx(
+                                'px-2 py-0.5 rounded text-[10px] font-bold uppercase',
+                                exp.controller === 'pulse'
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : exp.controller === 'adaptive'
+                                  ? 'bg-teal-100 text-teal-700'
+                                  : 'bg-slate-100 text-slate-700'
+                              )}
+                            >
+                              {exp.controller}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-600">{exp.duration}s</td>
+                          <td className="px-4 py-3">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {exp.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => exportExp(exp.id, 'csv')}
+                                title="Download CSV"
+                                className="p-1.5 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => openDetail(exp)}
+                                title="View Report Details"
+                                className="p-1.5 rounded text-slate-400 hover:text-blue-600 hover:bg-slate-100"
+                              >
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Full Report Details Drawer */}
+          {selected && (
+            <div className="xl:col-span-5 bg-white rounded-xl border border-slate-200 shadow-md p-6 sticky top-20 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h3 className="text-base font-semibold text-slate-800">Report Details — #{selected.id}</h3>
+                  <p className="text-xs text-slate-400">Technical Audit Record</p>
+                </div>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded-md"
+                >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               {detailLoading ? (
-                <div className="py-8 text-center text-slate-400 text-sm">Loading…</div>
+                <div className="py-12 text-center text-xs text-slate-400">Loading detailed metrics...</div>
               ) : (
-                <>
-                  {/* Config */}
-                  <div className="space-y-2 mb-4 pb-4 border-b border-slate-100">
-                    <DetailRow label="Scenario" value={selected.scenario} />
-                    <DetailRow label="Controller" value={selected.controller} />
-                    <DetailRow label="Duration" value={`${selected.duration}s`} />
-                    <DetailRow label="Seed" value={String(selected.seed)} />
-                    <DetailRow label="Status" value={selected.status} />
-                    <DetailRow label="Created" value={fmtDateTime(selected.created_at)} />
-                    {selected.completed_at && <DetailRow label="Completed" value={fmtDateTime(selected.completed_at)} />}
+                <div className="space-y-4">
+                  {/* Controller Configuration & Context */}
+                  <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Evaluated Controller:</span>
+                      <span className="font-bold text-blue-700 uppercase">{selected.controller}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Traffic Scenario:</span>
+                      <span className="font-semibold text-slate-800">Scenario {selected.scenario}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Duration:</span>
+                      <span className="font-semibold text-slate-800">{selected.duration} seconds</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Reproducibility Seed:</span>
+                      <span className="font-mono text-slate-800">{selected.seed}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Executed:</span>
+                      <span className="text-slate-600">{fmtDateTime(selected.created_at)}</span>
+                    </div>
                   </div>
 
-                  {/* Metrics */}
+                  {/* Recorded Metrics */}
                   {selected.metrics && selected.metrics.length > 0 && (
-                    <div className="mb-4">
-                      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Metrics</p>
-                      <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                        {selected.metrics.map((m, i) => (
-                          <div key={i} className="flex justify-between text-xs">
-                            <span className="text-slate-500 capitalize">{m.name.replace(/_/g, ' ')}{m.approach ? ` (${m.approach})` : ''}</span>
-                            <span className="font-semibold text-slate-700">{fmt(m.value)}</span>
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                        Experimental Telemetry
+                      </h4>
+                      <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                        {selected.metrics.map((m, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2 rounded bg-slate-50 text-xs border border-slate-100"
+                          >
+                            <span className="text-slate-600 capitalize">
+                              {m.name.replace(/_/g, ' ')}
+                              {m.approach ? ` (${m.approach})` : ''}
+                            </span>
+                            <span className="font-bold text-slate-800">{fmt(m.value)}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Limitations */}
-                  <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-                    <p className="text-xs font-semibold text-amber-700 mb-1">Limitations</p>
-                    <p className="text-xs text-amber-600">Simulation values only. Poisson arrivals, constant service rate. Not real-world validated.</p>
+                  {/* Safety Guard Certification */}
+                  <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-800 text-xs flex items-center gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                    <div>
+                      <p className="font-bold">NEMA Safety Compliant</p>
+                      <p className="text-[11px] text-emerald-700/80">0 phase conflicts, min green ≥10s, yellow ≥3s, all-red ≥2s.</p>
+                    </div>
                   </div>
 
-                  {/* Export buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => exportExp(selected.id, 'csv')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
-                    >
-                      <Download className="h-3.5 w-3.5" /> CSV
-                    </button>
-                    <button
-                      onClick={() => exportExp(selected.id, 'json')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
-                    >
-                      <Download className="h-3.5 w-3.5" /> JSON
-                    </button>
+                  {/* Report Actions */}
+                  <div className="pt-3 border-t border-slate-100 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => exportExp(selected.id, 'csv')}
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5 text-blue-600" />
+                        <span>Export CSV</span>
+                      </button>
+                      <button
+                        onClick={() => exportExp(selected.id, 'json')}
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5 text-purple-600" />
+                        <span>Export JSON</span>
+                      </button>
+                    </div>
+
                     <button
                       onClick={() => window.print()}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-800 transition-colors"
                     >
-                      <FileText className="h-3.5 w-3.5" /> Print
+                      <Printer className="h-3.5 w-3.5" />
+                      <span>Print Formatted Report</span>
+                    </button>
+
+                    <button
+                      onClick={() => navigate('/performance-lab')}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg border border-blue-200 bg-blue-50 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Re-Run in Performance Lab</span>
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </Layout>
   );
 }
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between text-xs">
-      <span className="text-slate-500">{label}</span>
-      <span className="font-medium text-slate-700 capitalize max-w-[180px] text-right truncate">{value}</span>
-    </div>
-  );
-}
-

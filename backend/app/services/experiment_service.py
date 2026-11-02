@@ -3,6 +3,7 @@
 import csv
 import io
 import json
+import logging
 from datetime import datetime, timezone
 from typing import List, Optional
 
@@ -16,6 +17,8 @@ from app.controllers.fixed_timing import FixedTimingController
 from app.controllers.queue_adaptive import QueueAdaptiveController
 from app.controllers.pulse_controller import PULSEController
 from app.simulation.scenarios import SCENARIOS
+
+logger = logging.getLogger("pulse.experiments")
 
 
 async def run_experiment_all_controllers(
@@ -127,8 +130,8 @@ def _exp_to_dict(exp: ExperimentRun) -> dict:
     config = {}
     try:
         config = json.loads(exp.config_json or "{}")
-    except Exception:
-        pass
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        logger.warning("Invalid stored experiment config for experiment %s: %s", exp.id, exc)
     return {
         "id": exp.id,
         "scenario": exp.scenario,
@@ -158,4 +161,3 @@ def export_experiment_csv(exp_detail: dict) -> str:
     for m in exp_detail.get("metrics", []):
         writer.writerow([m["name"], m["value"], m.get("approach", "")])
     return output.getvalue()
-

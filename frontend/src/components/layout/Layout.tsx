@@ -14,14 +14,23 @@ export default function Layout({ children, title, subtitle }: LayoutProps) {
   const { state } = useAppStore();
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="pulse-app flex h-screen overflow-hidden">
+      {/* Fixed sidebar */}
       <Sidebar />
-      <div className="flex-1 flex flex-col ml-64 min-w-0">
+
+      {/* Main area (offset by sidebar width) */}
+      <div className="pulse-workspace flex-1 flex flex-col ml-64 min-w-0">
+        {/* Sticky topbar */}
         <Header title={title} subtitle={subtitle} />
-        <main className="flex-1 overflow-y-auto p-6">
-          {children}
+
+        {/* Scrollable content */}
+        <main className="pulse-main flex-1 overflow-y-auto p-6 xl:p-8 animate-float-in">
+          <div className="max-w-[1680px] mx-auto">
+            {children}
+          </div>
         </main>
       </div>
+
       {/* Toast container */}
       <div className="fixed top-4 right-4 z-50 space-y-2 w-80">
         {state.toasts.map(t => (
@@ -31,4 +40,3 @@ export default function Layout({ children, title, subtitle }: LayoutProps) {
     </div>
   );
 }
-
